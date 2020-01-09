@@ -571,48 +571,36 @@ public:
                 if (pBitmapMemory != NULL)
                 {
                     GetClientRect(hWnd, &rcWindow);
-                    bool found = false;
-                    pGraphicsMemory = reinterpret_cast<Gdiplus::Graphics*>(GetProp(hWnd, _T(PROP_GRAPHICS_MEMORY)));
-                    if (pGraphicsMemory != NULL)
-                    {
-                        Gdiplus::Graphics graphics(hDC);
-                        int i, x, y;
-                        Gdiplus::Color c;
-                        for (i = 0; i < 20; i++) {
-                            if (cyh[i].IsDone()) {
-                                found = true;
-                                while (cyh[i].GetNext(x, y)) {
-                                    switch (col[i]) {
-                                    case 0:
-                                        c = Gdiplus::Color(255, 255, 255);
-                                        break;
-                                    case 1:
-                                        c = Gdiplus::Color(255, 0, 0);
-                                        break;
-                                    case 2:
-                                        c = Gdiplus::Color(255, 255, 0);
-                                        break;
-                                    case 3:
-                                        c = Gdiplus::Color(128, 128, 255);
-                                        break;
-                                    case 4:
-                                        c = Gdiplus::Color(128, 255, 128);
-                                        break;
-                                    }
-                                    Gdiplus::Pen pen(c);
-                                    graphics.DrawLine(&pen, Gdiplus::Point(x, y), Gdiplus::Point(x + 1, y + 1));
-                                    //Gdiplus::SolidBrush brush(c);
-                                    //graphics.DrawEllipse(&pen, Gdiplus::Rect(x, y, 1, 1));
-                                    //pBitmapMemory->SetPixel(x, y, c);
+                    Gdiplus::Graphics(hDC).DrawImage(pBitmapMemory,
+                        Gdiplus::RectF(0, 0, rcWindow.right - rcWindow.left, rcWindow.bottom - rcWindow.top),
+                        0, 0, pBitmapMemory->GetWidth(), pBitmapMemory->GetHeight(), Gdiplus::Unit::UnitPixel);
+
+                    int i, x, y;
+                    Gdiplus::Color c;
+                    for (i = 0; i < 20; i++) {
+                        if (cyh[i].IsDone()) {
+                            while (cyh[i].GetNext(x, y)) {
+                                switch (col[i]) {
+                                case 0:
+                                    c = Gdiplus::Color(255, 255, 255);
+                                    break;
+                                case 1:
+                                    c = Gdiplus::Color(255, 0, 0);
+                                    break;
+                                case 2:
+                                    c = Gdiplus::Color(255, 255, 0);
+                                    break;
+                                case 3:
+                                    c = Gdiplus::Color(128, 128, 255);
+                                    break;
+                                case 4:
+                                    c = Gdiplus::Color(128, 255, 128);
+                                    break;
                                 }
+                                Gdiplus::SolidBrush brush(c);
+                                Gdiplus::Graphics(hDC).FillEllipse(&brush, Gdiplus::Rect(x, y, 4, 4));
                             }
                         }
-                    }
-                    if (!found)
-                    {
-                        Gdiplus::Graphics(hDC).DrawImage(pBitmapMemory,
-                            Gdiplus::RectF(0, 0, rcWindow.right - rcWindow.left, rcWindow.bottom - rcWindow.top),
-                            0, 0, pBitmapMemory->GetWidth(), pBitmapMemory->GetHeight(), Gdiplus::Unit::UnitPixel);
                     }
                 }
             }
@@ -629,8 +617,9 @@ public:
                 POINT point = { 0 };
                 GetCursorPos(&point);
                 ScreenToClient(hWnd, &point);
-                point.x = 100;
-                point.y = 100;
+                GetClientRect(hWnd, &rcWindow);
+                point.x = 10 + rand() % (rcWindow.right - rcWindow.left - 10);
+                point.y = 10 + rand() % (rcWindow.bottom - rcWindow.top - 10);
                 // 左键点击，产生一烟花
                 cyh[pc].Init(point.x - 10, point.y - 10);
                 col[pc] = rand() % 5;
@@ -651,7 +640,7 @@ public:
             break;
             default:
             {
-
+                
             }
             break;
             }
