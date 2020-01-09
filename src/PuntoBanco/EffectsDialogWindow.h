@@ -11,34 +11,137 @@
 //
 #define RES_PNG_TYPE_NAME       "PNG"
 #define PROP_IMG_BACKGROUND     "IMG_BACKGROUND"
-#define PROP_IMG_TOP            "IMG_TOP"
-#define PROP_IMG_MIDDLE         "IMG_MIDDLE"
-#define PROP_IMG_BOTTOM         "IMG_BOTTOM"
 #define PROP_BITMAP_MEMORY      "BITMAP_MEMORY"
 #define PROP_GRAPHICS_MEMORY    "GRAPHICS_MEMORY"
+
 /////////////////////////////////////////////////////////////////////////////////
 //
-class CPuntoBancoDialogWindow : public CDialogWindow {
+#include <time.h>
+class CParicles
+{
+#define PARICLES_LIVETIME   20
+#define PARICLES_COUNTNUM   128
 public:
-    static CPuntoBancoDialogWindow* Instance() {
-        static CPuntoBancoDialogWindow instance;
+    CParicles() {
+        p = 0;
+        done = false;
+        memset(x, 0x00, sizeof(x));
+        memset(y, 0x00, sizeof(y));
+        memset(dx, 0x00, sizeof(dx));
+        memset(dy, 0x00, sizeof(dy));
+        memset(tm, 0x00, sizeof(tm));
+    }
+    virtual ~CParicles() {
+
+    }
+
+private:
+
+    int p;// 位置
+    bool done; // 是否
+    float x[PARICLES_COUNTNUM], y[PARICLES_COUNTNUM]; // 粒子坐标
+    float dx[PARICLES_COUNTNUM], dy[PARICLES_COUNTNUM]; // 粒子增量
+    int tm[PARICLES_COUNTNUM]; // 粒子存活时间
+
+public:
+
+    // 获取当前状态下一粒子位置
+    // 获取成功，返回真
+    bool GetNext(int& tx, int& ty) {
+        if (done) {            
+            while (p < PARICLES_COUNTNUM && tm[p] <= 0) { 
+                // 找到下一未消失粒子
+                p++;
+            }
+            if (p < PARICLES_COUNTNUM) {
+                tx = (int)x[p];
+                ty = (int)y[p];
+                p++;
+                return true; // 获取成功
+            }
+        }
+        return false;
+    }
+    // 烟花各粒子进入下一状态
+    // 如粒子全部消失，则返回false
+    bool DoNext() {
+        if (done) {
+            int c = 0;
+            for (int i = 0; i < PARICLES_COUNTNUM; i++) {
+                if (tm[i] > 0) { // 如果存活时间大于零
+                    x[i] += dx[i]; // 改变粒子位置
+                    y[i] += dy[i];
+                    tm[i]--; // 存活时间减一
+                }
+                else {
+                    c++;
+                }
+            }
+            done = (c != PARICLES_COUNTNUM);
+            p = 0;
+        }
+
+        return done;
+    }
+    bool IsDone() { 
+        return done;
+    }
+
+    // 初始化，输入为烟花中心点
+    void Init(int tx, int ty) {
+        int count = 0;
+        double d = 0.0f;
+        srand(time(NULL));
+        count = (PARICLES_COUNTNUM / 2) + rand() % (PARICLES_COUNTNUM / 2);
+        for (int i = 0; i < PARICLES_COUNTNUM; i++) {
+            if (i < count) {
+                d = float(rand() % 628) / 100.0f; // 粒子移动角度
+                x[i] = (float)tx;
+                y[i] = (float)ty;
+                dy[i] = float(rand() % 600) / 100.0f; // 粒子移动长度
+                dx[i] = sin(d) * dy[i]; // 粒子x方向增量
+                dy[i] = cos(d) * dy[i]; // 粒子y方向增量
+                tm[i] = (PARICLES_LIVETIME / 2) + rand() % (PARICLES_LIVETIME / 2); // 粒子存活时间
+            }
+            else {
+                tm[i] = 0;
+            }
+        }
+        done = true;
+        p = 0;
+    }
+};
+
+/////////////////////////////////////////////////////////////////////////////////
+//
+class CEffectsDialogWindow : public CDialogWindow {
+public:
+    static CEffectsDialogWindow* Instance() {
+        static CEffectsDialogWindow instance;
         return &instance;
     }
     virtual VOID Run(HINSTANCE hInstance)
     {
         DialogBoxRun(hInstance, 
             MAKEINTRESOURCE(IDD_PUNTOBANCO_DIALOG), 
-            CPuntoBancoDialogWindow::PuntoBancoDlgProc, 
-            CPuntoBancoDialogWindow::PuntoBancoWndproc,
+            CEffectsDialogWindow::PuntoBancoDlgProc, 
+            CEffectsDialogWindow::PuntoBancoWndproc,
             [](HWND _hWnd) {
                 SetWindowPos(_hWnd, HWND_DESKTOP, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, SWP_NOMOVE | SWP_NOZORDER | SWP_DRAWFRAME | SWP_HIDEWINDOW);
                 StartupResources(_hWnd);
             },
             [](HWND _hWnd) {
                 CleanupResources(_hWnd);
+            },
+            [](HWND _hWnd) {
+                TimeTask(_hWnd);
             });
     }
 public:
+    static VOID TimeTask(HWND hWnd)
+    {
+        
+    }
     static INT StartupResources(HWND hWnd)
     {
         Gdiplus::Bitmap* pBitmapBackground = NULL;
@@ -50,23 +153,11 @@ public:
         RECT rcWindow = { 0, 0, 0, 0 };
         GetClientRect(hWnd, &rcWindow);
 
-        if (CPuntoBancoDialogWindow::Instance()->GdiplusLoadBitmapFromResource(&pBitmapBackground, GetModuleHandle(NULL), (MAKEINTRESOURCE(IDB_PNG_BACKGROUND)), _T(RES_PNG_TYPE_NAME)))
+        if (CEffectsDialogWindow::Instance()->GdiplusLoadBitmapFromResource(&pBitmapBackground, GetModuleHandle(NULL), (MAKEINTRESOURCE(IDB_PNG_BACKGROUND)), _T(RES_PNG_TYPE_NAME)))
         {
             SetProp(hWnd, _T(PROP_IMG_BACKGROUND), (HANDLE)pBitmapBackground);
         }
-        if (CPuntoBancoDialogWindow::Instance()->GdiplusLoadBitmapFromResource(&pBitmapTop, GetModuleHandle(NULL), (MAKEINTRESOURCE(IDB_PNG_TOP)), _T(RES_PNG_TYPE_NAME)))
-        {
-            SetProp(hWnd, _T(PROP_IMG_TOP), (HANDLE)pBitmapTop);
-        }
-        if (CPuntoBancoDialogWindow::Instance()->GdiplusLoadBitmapFromResource(&pBitmapMiddle, GetModuleHandle(NULL), (MAKEINTRESOURCE(IDB_PNG_MIDDLE)), _T(RES_PNG_TYPE_NAME)))
-        {
-            SetProp(hWnd, _T(PROP_IMG_MIDDLE), (HANDLE)pBitmapMiddle);
-        }
-        if (CPuntoBancoDialogWindow::Instance()->GdiplusLoadBitmapFromResource(&pBitmapBottom, GetModuleHandle(NULL), (MAKEINTRESOURCE(IDB_PNG_BOTTOM)), _T(RES_PNG_TYPE_NAME)))
-        {
-            SetProp(hWnd, _T(PROP_IMG_BOTTOM), (HANDLE)pBitmapBottom);
-        }
-
+       
         pBitmapMemory = new Gdiplus::Bitmap(rcWindow.right - rcWindow.left, rcWindow.bottom - rcWindow.top);
         if (pBitmapMemory != NULL)
         {
@@ -82,18 +173,6 @@ public:
                 pGraphicsMemory->DrawImage(pBitmapBackground,
                     Gdiplus::RectF(0, 0, pBitmapMemory->GetWidth(), pBitmapMemory->GetHeight()),
                     0, 0, pBitmapBackground->GetWidth(), pBitmapBackground->GetHeight(), Gdiplus::Unit::UnitPixel);
-
-                pGraphicsMemory->DrawImage(pBitmapTop,
-                    Gdiplus::RectF(0, 60, pBitmapTop->GetWidth(), pBitmapTop->GetHeight()),
-                    0, 0, pBitmapTop->GetWidth(), pBitmapTop->GetHeight(), Gdiplus::Unit::UnitPixel);
-
-                pGraphicsMemory->DrawImage(pBitmapMiddle,
-                    Gdiplus::RectF(0, pBitmapTop->GetHeight() + 10 + 60, pBitmapMiddle->GetWidth(), pBitmapMiddle->GetHeight()),
-                    0, 0, pBitmapMiddle->GetWidth(), pBitmapMiddle->GetHeight(), Gdiplus::Unit::UnitPixel);
-
-                pGraphicsMemory->DrawImage(pBitmapBottom,
-                    Gdiplus::RectF(0, pBitmapTop->GetHeight() + 10 + pBitmapMiddle->GetHeight() + 10 + 60, pBitmapBottom->GetWidth(), pBitmapBottom->GetHeight()),
-                    0, 0, pBitmapBottom->GetWidth(), pBitmapBottom->GetHeight(), Gdiplus::Unit::UnitPixel);
             }
             else
             {
@@ -107,16 +186,10 @@ public:
     static INT CleanupResources(HWND hWnd)
     {
         Gdiplus::Bitmap* pBitmapBackground = NULL;
-        Gdiplus::Bitmap* pBitmapTop = NULL;
-        Gdiplus::Bitmap* pBitmapMiddle = NULL;
-        Gdiplus::Bitmap* pBitmapBottom = NULL;
         Gdiplus::Bitmap* pBitmapMemory = NULL;
         Gdiplus::Graphics* pGraphicsMemory = NULL;
 
         pBitmapBackground = reinterpret_cast<Gdiplus::Bitmap*>(GetProp(hWnd, _T(PROP_IMG_BACKGROUND)));
-        pBitmapTop = reinterpret_cast<Gdiplus::Bitmap*>(GetProp(hWnd, _T(PROP_IMG_TOP)));
-        pBitmapMiddle = reinterpret_cast<Gdiplus::Bitmap*>(GetProp(hWnd, _T(PROP_IMG_MIDDLE)));
-        pBitmapBottom = reinterpret_cast<Gdiplus::Bitmap*>(GetProp(hWnd, _T(PROP_IMG_BOTTOM)));
         pBitmapMemory = reinterpret_cast<Gdiplus::Bitmap*>(GetProp(hWnd, _T(PROP_BITMAP_MEMORY)));
         pGraphicsMemory = reinterpret_cast<Gdiplus::Graphics*>(GetProp(hWnd, _T(PROP_GRAPHICS_MEMORY)));
 
@@ -125,24 +198,6 @@ public:
             SetProp(hWnd, _T(PROP_IMG_BACKGROUND), (HANDLE)NULL);
             delete pBitmapBackground;
             pBitmapBackground = NULL;
-        }
-        if (pBitmapTop != NULL)
-        {
-            SetProp(hWnd, _T(PROP_IMG_TOP), (HANDLE)NULL);
-            delete pBitmapTop;
-            pBitmapTop = NULL;
-        }
-        if (pBitmapMiddle != NULL)
-        {
-            SetProp(hWnd, _T(PROP_IMG_MIDDLE), (HANDLE)NULL);
-            delete pBitmapMiddle;
-            pBitmapMiddle = NULL;
-        }
-        if (pBitmapBottom != NULL)
-        {
-            SetProp(hWnd, _T(PROP_IMG_BOTTOM), (HANDLE)NULL);
-            delete pBitmapBottom;
-            pBitmapBottom = NULL;
         }
         if (pBitmapMemory != NULL)
         {
@@ -169,10 +224,10 @@ public:
         pGraphicsMemory = reinterpret_cast<Gdiplus::Graphics*>(GetProp(hWnd, _T(PROP_GRAPHICS_MEMORY)));
         //图像木刻处理
         Gdiplus::Color color, colorTemp;
-        int i, j, avg, temp;
-        for (i = 0; i < pBitmapBackground->GetWidth(); i++)
+        int avg, temp;
+        for (int i = 0; i < pBitmapBackground->GetWidth(); i++)
         {
-            for (j = 0; j < pBitmapBackground->GetHeight(); j++)
+            for (int j = 0; j < pBitmapBackground->GetHeight(); j++)
             {
                 pBitmapBackground->GetPixel(i, j, &color);
                 avg = (color.GetRed() + color.GetGreen() + color.GetBlue()) / 3;
@@ -283,6 +338,9 @@ public:
             0, 0, pBitmapBackground->GetWidth(), pBitmapBackground->GetHeight(), Gdiplus::Unit::UnitPixel);
         InvalidateRect(hWnd, NULL, FALSE);
     }
+    static CParicles cyh[20];
+    static int col[20];
+    static int pc;
 
     static LRESULT CALLBACK PuntoBancoWndproc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
@@ -290,9 +348,6 @@ public:
 
         RECT rcWindow = { 0 };
         Gdiplus::Bitmap* pBitmapBackground = NULL;
-        Gdiplus::Bitmap* pBitmapTop = NULL;
-        Gdiplus::Bitmap* pBitmapMiddle = NULL;
-        Gdiplus::Bitmap* pBitmapBottom = NULL;
         Gdiplus::Bitmap* pBitmapMemory = NULL;
         Gdiplus::Graphics* pGraphicsMemory = NULL;
 
@@ -447,16 +502,46 @@ public:
         }
         return CallWindowProc((WNDPROC)GetWindowLongPtr(hWnd, GWLP_USERDATA), hWnd, uMsg, wParam, lParam);
     }
+#define _TIMER_ID   1015
+    static void CALLBACK TimerProc(HWND hWnd, UINT message, UINT_PTR iTimerID, DWORD dwTime)
+    {
+        // 定时器，每次已经产生的烟花进入下一状态
+        for (int i = 0; i < 20; i++) {
+            if (cyh[i].IsDone()) {
+                cyh[i].DoNext();
+            }
+        }
+        //InvalidateRect(hWnd, NULL, FALSE);
+
+        HWND btnWnd = GetDlgItem(hWnd, IDOK);
+        RECT rcBtn = { 0 };
+        RECT rcWnd = { 0 };
+        GetClientRect(hWnd, &rcWnd);
+        GetWindowRect(btnWnd, &rcBtn);
+        ScreenToClient(hWnd, (LPPOINT)&rcBtn + 0);
+        ScreenToClient(hWnd, (LPPOINT)&rcBtn + 1);
+        HRGN hRgnWnd = CreateRectRgnIndirect(&rcWnd);
+        HRGN hRgnBtn = CreateRectRgnIndirect(&rcBtn);
+        if (hRgnWnd && hRgnBtn)
+        {
+            CombineRgn(hRgnWnd, hRgnWnd, hRgnBtn, RGN_XOR);
+            InvalidateRgn(hWnd, hRgnWnd, FALSE);
+        }
+        if (hRgnWnd)
+        {
+            DeleteObject(hRgnWnd);
+        }
+        if (hRgnBtn)
+        {
+            DeleteObject(hRgnBtn);
+        }
+    }
     static INT_PTR CALLBACK PuntoBancoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         UNREFERENCED_PARAMETER(lParam);
 
-        HDC hDC = NULL;
         RECT rcWindow = { 0 };
         Gdiplus::Bitmap* pBitmapBackground = NULL;
-        Gdiplus::Bitmap* pBitmapTop = NULL;
-        Gdiplus::Bitmap* pBitmapMiddle = NULL;
-        Gdiplus::Bitmap* pBitmapBottom = NULL;
         Gdiplus::Bitmap* pBitmapMemory = NULL;
         Gdiplus::Graphics* pGraphicsMemory = NULL;
 
@@ -464,8 +549,10 @@ public:
         {
         case WM_INITDIALOG:
         {
+            srand(time(NULL));
+            SetTimer(hWnd, _TIMER_ID, 100, CEffectsDialogWindow::TimerProc);
             ShowWindow(GetDlgItem(hWnd, IDC_STATIC), SW_HIDE);
-            ShowWindow(GetDlgItem(hWnd, IDOK), SW_HIDE);
+            //ShowWindow(GetDlgItem(hWnd, IDOK), SW_HIDE);
             ShowWindow(GetDlgItem(hWnd, IDCANCEL), SW_HIDE);
             return (INT_PTR)FALSE;
         }
@@ -476,6 +563,7 @@ public:
             HDC hDC = NULL;
 
             hDC = BeginPaint(hWnd, &ps);
+
             // TODO: Add any drawing code that uses hdc here...
             if (hDC != NULL)
             {
@@ -483,9 +571,49 @@ public:
                 if (pBitmapMemory != NULL)
                 {
                     GetClientRect(hWnd, &rcWindow);
-                    Gdiplus::Graphics(hDC).DrawImage(pBitmapMemory,
-                        Gdiplus::RectF(0, 0, rcWindow.right - rcWindow.left, rcWindow.bottom - rcWindow.top),
-                        0, 0, pBitmapMemory->GetWidth(), pBitmapMemory->GetHeight(), Gdiplus::Unit::UnitPixel);
+                    bool found = false;
+                    pGraphicsMemory = reinterpret_cast<Gdiplus::Graphics*>(GetProp(hWnd, _T(PROP_GRAPHICS_MEMORY)));
+                    if (pGraphicsMemory != NULL)
+                    {
+                        Gdiplus::Graphics graphics(hDC);
+                        int i, x, y;
+                        Gdiplus::Color c;
+                        for (i = 0; i < 20; i++) {
+                            if (cyh[i].IsDone()) {
+                                found = true;
+                                while (cyh[i].GetNext(x, y)) {
+                                    switch (col[i]) {
+                                    case 0:
+                                        c = Gdiplus::Color(255, 255, 255);
+                                        break;
+                                    case 1:
+                                        c = Gdiplus::Color(255, 0, 0);
+                                        break;
+                                    case 2:
+                                        c = Gdiplus::Color(255, 255, 0);
+                                        break;
+                                    case 3:
+                                        c = Gdiplus::Color(128, 128, 255);
+                                        break;
+                                    case 4:
+                                        c = Gdiplus::Color(128, 255, 128);
+                                        break;
+                                    }
+                                    Gdiplus::Pen pen(c);
+                                    graphics.DrawLine(&pen, Gdiplus::Point(x, y), Gdiplus::Point(x + 1, y + 1));
+                                    //Gdiplus::SolidBrush brush(c);
+                                    //graphics.DrawEllipse(&pen, Gdiplus::Rect(x, y, 1, 1));
+                                    //pBitmapMemory->SetPixel(x, y, c);
+                                }
+                            }
+                        }
+                    }
+                    if (!found)
+                    {
+                        Gdiplus::Graphics(hDC).DrawImage(pBitmapMemory,
+                            Gdiplus::RectF(0, 0, rcWindow.right - rcWindow.left, rcWindow.bottom - rcWindow.top),
+                            0, 0, pBitmapMemory->GetWidth(), pBitmapMemory->GetHeight(), Gdiplus::Unit::UnitPixel);
+                    }
                 }
             }
 
@@ -498,11 +626,24 @@ public:
             {
             case IDOK:
             {
+                POINT point = { 0 };
+                GetCursorPos(&point);
+                ScreenToClient(hWnd, &point);
+                point.x = 100;
+                point.y = 100;
+                // 左键点击，产生一烟花
+                cyh[pc].Init(point.x - 10, point.y - 10);
+                col[pc] = rand() % 5;
+                pc++;
+                if (pc == 20) {
+                    pc = 0;
+                }
                 return (INT_PTR)TRUE;
             }
             break;
             case IDCANCEL:
             {
+                KillTimer(hWnd, _TIMER_ID);
                 EndDialog(hWnd, LOWORD(wParam));
                 PostQuitMessage(WM_QUIT);
                 return (INT_PTR)TRUE;
@@ -527,3 +668,6 @@ public:
     }
 };
 
+CParicles CEffectsDialogWindow::cyh[20];
+int CEffectsDialogWindow::col[20];
+int CEffectsDialogWindow::pc = 0;

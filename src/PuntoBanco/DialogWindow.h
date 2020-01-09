@@ -13,6 +13,7 @@ protected:
         WNDPROC wndProc = WndProc,
         PFN_CALLBACK cbInit = NULL,
         PFN_CALLBACK cbExit = NULL,
+        PFN_CALLBACK cbTime = NULL,
         HWND hParent = NULL,
         LPARAM lParam = NULL)
     {
@@ -36,7 +37,7 @@ protected:
 
                 ShowWindow(hWnd, SW_SHOW);
 
-                MessageProcess(hWnd);
+                MessageProcess(hWnd, cbTime);
 
                 if (cbExit != NULL)
                 {
@@ -150,7 +151,7 @@ protected:
     }
 
 private:
-    virtual VOID MessageProcess(HWND hWnd)
+    virtual VOID MessageProcess(HWND hWnd, PFN_CALLBACK cbTimer = NULL)
     {
         while (TRUE)
         {
@@ -191,6 +192,10 @@ private:
             else
             {
                 // 完成某些工作的其它行程序
+                if (cbTimer != NULL)
+                {
+                    cbTimer(hWnd);
+                }
             }
         }
     }

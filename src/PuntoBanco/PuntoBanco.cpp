@@ -3,6 +3,7 @@
 
 #include "framework.h"
 #include "PuntoBanco.h"
+#include "EffectsDialogWindow.h"
 #include "PuntoBancoDialogWindow.h"
 
 
@@ -47,7 +48,8 @@ INT APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
     //_tcsncpy(G_WORK_PATH, *__targv, sizeof(G_WORK_PATH) / sizeof(*G_WORK_PATH)); 
     //(*_tcsrchr(G_WORK_PATH, _T('\\'))) = _T('\0');
 
-    CPuntoBancoDialogWindow::Instance()->Run(hInstance);
+    //CPuntoBancoDialogWindow::Instance()->Run(hInstance);
+    CEffectsDialogWindow::Instance()->Run(hInstance);
 
     return nResult;
 }
