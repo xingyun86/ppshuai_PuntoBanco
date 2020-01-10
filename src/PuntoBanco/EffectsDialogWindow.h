@@ -111,7 +111,123 @@ public:
         p = 0;
     }
 };
+/// <summary>
+/// 对颜色数组进行混合
+/// </summary>
+/// <param name="colors"></param>
+/// <returns></returns>
+Gdiplus::Color BlendColor(Gdiplus::Color * colors, UINT nCount)
+{
+    if (nCount <= 0)
+    {
+        return Gdiplus::Color::Transparent;
+    }
 
+    ULONG asum = 0, rsum = 0, gsum = 0, bsum = 0;
+
+    for (int i = 0, len = nCount; i < len; i++)
+    {
+        asum += colors[i].GetA();
+        rsum += (ULONG)(colors[i].GetA() * colors[i].GetR());
+        gsum += (ULONG)(colors[i].GetG() * colors[i].GetA());
+        bsum += (ULONG)(colors[i].GetB() * colors[i].GetA());
+    }
+
+    if (asum == 0)
+    {
+        return Gdiplus::Color::Transparent;
+    }
+    rsum /= asum;
+    gsum /= asum;
+    bsum /= asum;
+    asum /= (ULONG)nCount;
+    return Gdiplus::Color((int)asum, (int)rsum, (int)gsum, (int)bsum);
+}
+
+/// <summary>
+/// 毛玻璃效果
+/// </summary>
+/// <param name="srcBmp">源图片</param>
+/// <param name="minRadius">最小离散半径</param>
+/// <param name="maxRadius">最大离散半径</param>
+/// <param name="samples">采样点数</param>
+/// <returns></returns>
+#ifndef _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
+#include <math.h>
+#endif
+Gdiplus::Bitmap * FrostedEffect(Gdiplus::Bitmap * srcBmp, int minRadius, int maxRadius, int nSamples)
+{
+    int width = srcBmp->GetWidth();
+    int height = srcBmp->GetHeight();
+    Gdiplus::Bitmap * targBmp = new Gdiplus::Bitmap(width, height, srcBmp->GetPixelFormat());
+    if (targBmp != NULL)
+    {
+        Gdiplus::Rect rect(0, 0, width, height);
+        Gdiplus::BitmapData srcData;
+        srcBmp->LockBits(&rect, Gdiplus::ImageLockMode::ImageLockModeRead, srcBmp->GetPixelFormat(), &srcData);
+
+        Gdiplus::BitmapData targData;
+        targBmp->LockBits(&rect, Gdiplus::ImageLockMode::ImageLockModeWrite, targBmp->GetPixelFormat(), &targData);
+
+        int pxsize = Gdiplus::GetPixelFormatSize(srcBmp->GetPixelFormat()) / 8;//像素大小
+
+        bool bAlpha = Gdiplus::IsAlphaPixelFormat(srcBmp->GetPixelFormat());
+
+        int offset = srcData.Stride - srcData.Width * pxsize;
+
+        srand(time(0));
+        Gdiplus::Color* sampleColors = new Gdiplus::Color[nSamples];
+        if(sampleColors != NULL)
+        {
+            byte* srcptr = (byte*)srcData.Scan0;
+            for (int i = 0; i < height; i++)
+            {
+                for (int j = 0; j < width; j++)
+                {
+                    for (int s = 0; s < nSamples; s++)
+                    {
+                        double d = minRadius + (rand() % (maxRadius - minRadius + 1));
+                        double angle = M_PI * 2 * (rand() / double(RAND_MAX));
+                        double p = sin(angle);
+                        int samh = (int)(i + sin(angle) * d);
+                        int samw = (int)(j + cos(angle) * d);
+                        samh = samh < 0 ? 0 : (samh > height - 1 ? height - 1 : samh);
+                        samw = samw < 0 ? 0 : (samw > width ? width : samw);
+                        byte* ptr = srcptr + samh * srcData.Stride + samw * pxsize;
+                        if (bAlpha)
+                        {
+                            sampleColors[s] = Gdiplus::Color(*(ptr + 3), *(ptr + 2), *(ptr + 1), *ptr);
+                        }
+                        else
+                        {
+                            sampleColors[s] = Gdiplus::Color(*(ptr + 2), *(ptr + 1), *ptr);
+                        }
+                    }
+
+                    Gdiplus::Color col = BlendColor(sampleColors, nSamples);
+                    byte* targptr = (byte*)targData.Scan0 + srcData.Stride * i + j * pxsize;
+                    *targptr = col.GetB();
+                    *(targptr + 1) = col.GetG();
+                    *(targptr + 2) = col.GetR();
+                    if (bAlpha)
+                    {
+                        *(targptr + 3) = col.GetA();
+                    }
+                }
+            }
+            delete sampleColors;
+            sampleColors = NULL;
+        }
+
+        srcBmp->UnlockBits(&srcData);
+
+        targBmp->UnlockBits(&targData);
+    }
+
+    return targBmp;
+
+}
 /////////////////////////////////////////////////////////////////////////////////
 //
 class CEffectsDialogWindow : public CDialogWindow {
@@ -170,9 +286,14 @@ public:
                 pGraphicsMemory->SetSmoothingMode(Gdiplus::SmoothingModeHighQuality);
                 pGraphicsMemory->SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBilinear);
 
-                pGraphicsMemory->DrawImage(pBitmapBackground,
-                    Gdiplus::RectF(0, 0, pBitmapMemory->GetWidth(), pBitmapMemory->GetHeight()),
-                    0, 0, pBitmapBackground->GetWidth(), pBitmapBackground->GetHeight(), Gdiplus::Unit::UnitPixel);
+                Gdiplus::Bitmap* pBitmapForstedEffect = FrostedEffect(pBitmapBackground, 5, 8, 10);
+                if (pBitmapForstedEffect != NULL)
+                {
+                    pGraphicsMemory->DrawImage(pBitmapForstedEffect,
+                        Gdiplus::RectF(0, 0, pBitmapMemory->GetWidth(), pBitmapMemory->GetHeight()),
+                        0, 0, pBitmapBackground->GetWidth(), pBitmapBackground->GetHeight(), Gdiplus::Unit::UnitPixel);
+                    delete pBitmapForstedEffect;
+                }
             }
             else
             {
@@ -213,7 +334,65 @@ public:
         }
         return (INT)(0);
     }
+  
+    static void yinying_handler(HWND hWnd)
+    {
+        Gdiplus::Graphics* pGraphicsMemory = NULL;
+        pGraphicsMemory = reinterpret_cast<Gdiplus::Graphics*>(GetProp(hWnd, _T(PROP_GRAPHICS_MEMORY)));
+        
+        RECT rcWnd = { 0 };
+        CStringW strTxt("19:20:30");
 
+        GetClientRect(hWnd, &rcWnd);
+        Gdiplus::RectF         desRC(rcWnd.left, rcWnd.top, (rcWnd.right - rcWnd.left) / 2, (rcWnd.bottom - rcWnd.top) / 4);
+        Gdiplus::PointF        txtPos(0, 0);
+        Gdiplus::FontFamily    fontFamily(L"Times New Roman");
+        Gdiplus::Font font(&fontFamily, 100, Gdiplus::FontStyle::FontStyleBold, Gdiplus::Unit::UnitPixel);
+        
+        Gdiplus::Bitmap bmpBack(desRC.Width, desRC.Height, pGraphicsMemory);
+
+        Gdiplus::Graphics* g = Gdiplus::Graphics::FromImage(&bmpBack);
+
+        //1.0 填充背景色
+        g->FillRectangle(&Gdiplus::SolidBrush(Gdiplus::Color::LightSlateGray), desRC);
+
+        //2.0 创建一个小尺寸的内存位图，设置它的长宽为总尺寸的1/4
+        Gdiplus::Bitmap bmp(bmpBack.GetWidth() / 2, bmpBack.GetHeight() / 2, g);
+
+        //2.1 设置绘制模式为反走样模式
+        Gdiplus::Graphics* pTempG = Gdiplus::Graphics::FromImage(&bmp);
+        pTempG->SetTextRenderingHint(Gdiplus::TextRenderingHint::TextRenderingHintAntiAlias);
+
+        //2.2 创建一个矩阵，使字体为原来的1/4，阴影距离也为你要设置文本的1/4左右
+        Gdiplus::Matrix mx((float)bmp.GetWidth() / bmpBack.GetWidth(), 0, 0, (float)bmp.GetHeight() / bmpBack.GetHeight(), 3, 3);
+        pTempG->SetTransform(&mx);
+        pTempG->RotateTransform(6);
+
+        //2.3 在位图上绘制文本，使用有透明度的画笔（比如50%透明）
+        pTempG->DrawString(strTxt, -1, &font, txtPos, NULL, &Gdiplus::SolidBrush(Gdiplus::Color(128, 0, 0, 0)));
+
+        //3.1 插值模式为高质量双三次插值法，插值法非常重要，因为双三次插值使文本的边模糊，这样就出现阴影与半影效果
+        g->SetInterpolationMode(Gdiplus::InterpolationMode::InterpolationModeHighQualityBicubic);
+
+        //3.2 设置绘制模式为反走样模式以保证正确的范围
+        g->SetTextRenderingHint(Gdiplus::TextRenderingHint::TextRenderingHintAntiAlias);
+
+        //3.3 把位图显示在屏幕上，在两个方向上都放大4倍
+        g->DrawImage(&bmp, desRC, 0, 0, bmp.GetWidth(), bmp.GetHeight(), Gdiplus::Unit::UnitPixel);
+
+        //3.4 把文本绘制到绘图平面上, 使用白色字体      
+        g->RotateTransform(6);
+        g->DrawString(strTxt, -1, &font, txtPos, NULL, &Gdiplus::SolidBrush(Gdiplus::Color::White));
+
+        pGraphicsMemory->DrawImage(&bmpBack, desRC, 0, 0, bmpBack.GetWidth(), bmpBack.GetHeight(), Gdiplus::Unit::UnitPixel);
+
+        //4.0 释放内存
+        if (NULL != pTempG)
+        {
+            delete pTempG;
+            pTempG = NULL;
+        }
+    }
     static void muke_handler(HWND hWnd)
     {
         Gdiplus::Bitmap* pBitmapMemory = NULL;
@@ -487,7 +666,8 @@ public:
                 //muke_handler(hWnd);
                 //diaoke_handler(hWnd);
                 //shuipingbaiyechuang_handler(hWnd);
-                chuizhibaiyechuang_handler(hWnd);
+                //chuizhibaiyechuang_handler(hWnd);
+                yinying_handler(hWnd);
             }
             break;
             default:
