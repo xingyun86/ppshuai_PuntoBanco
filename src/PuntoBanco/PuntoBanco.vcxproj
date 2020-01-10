@@ -163,10 +163,13 @@
     <ClInclude Include="PuntoBanco.h" />
     <ClInclude Include="PuntoBancoDialogWindow.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="RotateAnimation.h" />
+    <ClInclude Include="RotateDialogWindow.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PuntoBanco.cpp" />
+    <ClCompile Include="RotateAnimation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PuntoBanco.rc" />

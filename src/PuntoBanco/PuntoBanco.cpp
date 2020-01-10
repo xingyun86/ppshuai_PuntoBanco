@@ -5,6 +5,7 @@
 #include "PuntoBanco.h"
 #include "EffectsDialogWindow.h"
 #include "PuntoBancoDialogWindow.h"
+#include "RotateDialogWindow.h"
 
 
 /////////////////////////////////////////////////////////////////////////////////

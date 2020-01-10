@@ -284,7 +284,7 @@ public:
                 SetProp(hWnd, _T(PROP_GRAPHICS_MEMORY), (HANDLE)(pGraphicsMemory));
                 pGraphicsMemory->SetCompositingMode(Gdiplus::CompositingModeSourceOver);
                 pGraphicsMemory->SetSmoothingMode(Gdiplus::SmoothingModeHighQuality);
-                pGraphicsMemory->SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBilinear);
+                pGraphicsMemory->SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
 
                 Gdiplus::Bitmap* pBitmapForstedEffect = FrostedEffect(pBitmapBackground, 5, 8, 10);
                 if (pBitmapForstedEffect != NULL)
