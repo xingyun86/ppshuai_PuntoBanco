@@ -33,21 +33,15 @@
     <ClInclude Include="PuntoBancoDialogWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="EffectsDialogWindow.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="RotateDialogWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RotateAnimation.h">
+    <ClInclude Include="EffectsDialogWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PuntoBanco.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RotateAnimation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

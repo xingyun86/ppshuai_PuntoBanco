@@ -108,6 +108,9 @@ protected:
         }
         return false;
     }
+
+public:
+
     //显示在屏幕中央
     void CenterWindowInScreen(HWND hWnd, LONG lPosX = (0), LONG lPosY = (0))
     {
@@ -148,6 +151,14 @@ protected:
         ptAppWnd.x = (lPosX != (0)) ? lPosX : ((rcParent.right - rcParent.left - szAppWnd.cx) / 2);
         ptAppWnd.y = (lPosY != (0)) ? lPosY : ((rcParent.bottom - rcParent.top - szAppWnd.cy) / 2);
         MoveWindow(hWnd, ptAppWnd.x, ptAppWnd.y, szAppWnd.cx, szAppWnd.cy, TRUE);
+    }
+    //转换屏幕坐标为窗口坐标
+    void ScreenToClient(HWND hWnd, LPPOINT lpPoints, INT nCount)
+    {
+        for (INT n = 0; n < nCount; n++)
+        {
+            ::ScreenToClient(hWnd, (LPPOINT)(&lpPoints[n]));
+        }
     }
 
 private:

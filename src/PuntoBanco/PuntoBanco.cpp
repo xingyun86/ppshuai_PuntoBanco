@@ -3,9 +3,9 @@
 
 #include "framework.h"
 #include "PuntoBanco.h"
-#include "EffectsDialogWindow.h"
-#include "PuntoBancoDialogWindow.h"
 #include "RotateDialogWindow.h"
+//#include "EffectsDialogWindow.h"
+//#include "PuntoBancoDialogWindow.h"
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -50,7 +50,8 @@ INT APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
     //(*_tcsrchr(G_WORK_PATH, _T('\\'))) = _T('\0');
 
     //CPuntoBancoDialogWindow::Instance()->Run(hInstance);
-    CEffectsDialogWindow::Instance()->Run(hInstance);
+    //CEffectsDialogWindow::Instance()->Run(hInstance);
+    CRotateDialogWindow::Instance()->Run(hInstance);
 
     return nResult;
 }

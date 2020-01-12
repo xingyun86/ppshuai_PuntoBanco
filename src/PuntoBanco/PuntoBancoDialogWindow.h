@@ -28,8 +28,8 @@ public:
     {
         DialogBoxRun(hInstance, 
             MAKEINTRESOURCE(IDD_PUNTOBANCO_DIALOG), 
-            CPuntoBancoDialogWindow::PuntoBancoDlgProc, 
-            CPuntoBancoDialogWindow::PuntoBancoWndproc,
+            CPuntoBancoDialogWindow::CallBack_DlgProc,
+            CPuntoBancoDialogWindow::CallBack_WndProc,
             [](HWND _hWnd) {
                 SetWindowPos(_hWnd, HWND_DESKTOP, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, SWP_NOMOVE | SWP_NOZORDER | SWP_DRAWFRAME | SWP_HIDEWINDOW);
                 StartupResources(_hWnd);
@@ -284,7 +284,7 @@ public:
         InvalidateRect(hWnd, NULL, FALSE);
     }
 
-    static LRESULT CALLBACK PuntoBancoWndproc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+    static LRESULT CALLBACK CallBack_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         UNREFERENCED_PARAMETER(lParam);
 
@@ -447,7 +447,7 @@ public:
         }
         return CallWindowProc((WNDPROC)GetWindowLongPtr(hWnd, GWLP_USERDATA), hWnd, uMsg, wParam, lParam);
     }
-    static INT_PTR CALLBACK PuntoBancoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+    static INT_PTR CALLBACK CallBack_DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         UNREFERENCED_PARAMETER(lParam);
 

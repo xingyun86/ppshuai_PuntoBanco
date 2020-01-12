@@ -240,8 +240,8 @@ public:
     {
         DialogBoxRun(hInstance, 
             MAKEINTRESOURCE(IDD_PUNTOBANCO_DIALOG), 
-            CEffectsDialogWindow::PuntoBancoDlgProc, 
-            CEffectsDialogWindow::PuntoBancoWndproc,
+            CEffectsDialogWindow::CallBack_DlgProc, 
+            CEffectsDialogWindow::CallBack_WndProc,
             [](HWND _hWnd) {
                 SetWindowPos(_hWnd, HWND_DESKTOP, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, SWP_NOMOVE | SWP_NOZORDER | SWP_DRAWFRAME | SWP_HIDEWINDOW);
                 StartupResources(_hWnd);
@@ -261,9 +261,6 @@ public:
     static INT StartupResources(HWND hWnd)
     {
         Gdiplus::Bitmap* pBitmapBackground = NULL;
-        Gdiplus::Bitmap* pBitmapTop = NULL;
-        Gdiplus::Bitmap* pBitmapMiddle = NULL;
-        Gdiplus::Bitmap* pBitmapBottom = NULL;
         Gdiplus::Bitmap* pBitmapMemory = NULL;
         Gdiplus::Graphics* pGraphicsMemory = NULL;
         RECT rcWindow = { 0, 0, 0, 0 };
@@ -279,7 +276,7 @@ public:
         {
             SetProp(hWnd, _T(PROP_BITMAP_MEMORY), (HANDLE)(pBitmapMemory));
             pGraphicsMemory = Gdiplus::Graphics::FromImage(pBitmapMemory);
-            if (pBitmapMemory != NULL)
+            if (pGraphicsMemory != NULL)
             {
                 SetProp(hWnd, _T(PROP_GRAPHICS_MEMORY), (HANDLE)(pGraphicsMemory));
                 pGraphicsMemory->SetCompositingMode(Gdiplus::CompositingModeSourceOver);
@@ -521,7 +518,7 @@ public:
     static int col[20];
     static int pc;
 
-    static LRESULT CALLBACK PuntoBancoWndproc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+    static LRESULT CALLBACK CallBack_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         UNREFERENCED_PARAMETER(lParam);
 
@@ -698,8 +695,7 @@ public:
         RECT rcWnd = { 0 };
         GetClientRect(hWnd, &rcWnd);
         GetWindowRect(btnWnd, &rcBtn);
-        ScreenToClient(hWnd, (LPPOINT)&rcBtn + 0);
-        ScreenToClient(hWnd, (LPPOINT)&rcBtn + 1);
+        CEffectsDialogWindow::Instance()->ScreenToClient(hWnd, (LPPOINT)&rcBtn, sizeof(rcBtn)/sizeof(POINT));
         HRGN hRgnWnd = CreateRectRgnIndirect(&rcWnd);
         HRGN hRgnBtn = CreateRectRgnIndirect(&rcBtn);
         if (hRgnWnd && hRgnBtn)
@@ -716,7 +712,7 @@ public:
             DeleteObject(hRgnBtn);
         }
     }
-    static INT_PTR CALLBACK PuntoBancoDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+    static INT_PTR CALLBACK CallBack_DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         UNREFERENCED_PARAMETER(lParam);
 
@@ -796,7 +792,8 @@ public:
             {
                 POINT point = { 0 };
                 GetCursorPos(&point);
-                ScreenToClient(hWnd, &point);
+                CEffectsDialogWindow::Instance()->ScreenToClient(hWnd, (LPPOINT)&point, sizeof(point) / sizeof(POINT));
+
                 GetClientRect(hWnd, &rcWindow);
                 point.x = 10 + rand() % (rcWindow.right - rcWindow.left - 10);
                 point.y = 10 + rand() % (rcWindow.bottom - rcWindow.top - 10);
