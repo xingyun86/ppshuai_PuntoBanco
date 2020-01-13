@@ -725,7 +725,6 @@ public:
         {
         case WM_INITDIALOG:
         {
-            srand(time(NULL));
             SetTimer(hWnd, _TIMER_ID, 100, CEffectsDialogWindow::TimerProc);
             ShowWindow(GetDlgItem(hWnd, IDC_STATIC), SW_HIDE);
             //ShowWindow(GetDlgItem(hWnd, IDOK), SW_HIDE);

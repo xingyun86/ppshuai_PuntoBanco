@@ -29,7 +29,7 @@ typedef struct tagAnimationItem
 
 static int m_ItemSize = 0;
 static int m_MarginAngle = 0;
-static DWORD m_ColorBack = 0;
+static COLORREF m_ColorBack = 0;
 static int m_AnimationIndex = 0;
 static int m_AnimationType = 0;
 static Gdiplus::Rect m_Rect;
@@ -199,6 +199,7 @@ void DrawPie(Gdiplus::Graphics* pGraphics, HWND hWnd) {
     clr.SetFromCOLORREF(m_ColorBack);
     pBrush->SetColor(clr);
     pGraphicsTmp->FillEllipse(pBrush, rcIn);
+    
     //
     pGraphics->DrawImage(targBmp,
         Gdiplus::RectF(0, 0, targBmp->GetWidth(), targBmp->GetHeight()),
@@ -243,7 +244,7 @@ void DrawPie(Gdiplus::Graphics* pGraphics, HWND hWnd) {
         {
             m_AnimationIndex = 0;
             AnimationItem item = m_AnimationArray[ANIMATION_COUNTSIZE - 1];
-            for (int i = ANIMATION_COUNTSIZE - 1; i >= 0; i--)
+            for (int i = ANIMATION_COUNTSIZE - 1; i > 0; i--)
             {
                 m_AnimationArray[i] = m_AnimationArray[i - 1];
             }
@@ -325,7 +326,7 @@ public:
                 pGraphicsMemory->SetSmoothingMode(Gdiplus::SmoothingModeHighQuality);
                 pGraphicsMemory->SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
 
-                pGraphicsMemory->DrawImage(pBitmapMemory,
+                pGraphicsMemory->DrawImage(pBitmapBackground,
                     Gdiplus::RectF(0, 0, pBitmapMemory->GetWidth(), pBitmapMemory->GetHeight()),
                     0, 0, pBitmapBackground->GetWidth(), pBitmapBackground->GetHeight(), Gdiplus::Unit::UnitPixel);
             }
@@ -483,6 +484,10 @@ public:
     static void CALLBACK TimerProc(HWND hWnd, UINT message, UINT_PTR iTimerID, DWORD dwTime)
     {
         // 定时器，每次已经产生的烟花进入下一状态
+        Gdiplus::Graphics* pGraphicsMemory = NULL;
+        pGraphicsMemory = reinterpret_cast<Gdiplus::Graphics*>(GetProp(hWnd, _T(PROP_GRAPHICS_MEMORY)));
+        DrawPie(pGraphicsMemory, hWnd);
+
         HWND btnWnd = GetDlgItem(hWnd, IDOK);
         RECT rcBtn = { 0 };
         RECT rcWnd = { 0 };
@@ -519,8 +524,8 @@ public:
         {
         case WM_INITDIALOG:
         {
-            //InitAnimation(hWnd);
-            //SetTimer(hWnd, _TIMER_ID, 100, CRotateDialogWindow::TimerProc);
+            InitAnimation(hWnd);
+            SetTimer(hWnd, _TIMER_ID, 100, CRotateDialogWindow::TimerProc);
             ShowWindow(GetDlgItem(hWnd, IDC_STATIC), SW_HIDE);
             //ShowWindow(GetDlgItem(hWnd, IDOK), SW_HIDE);
             ShowWindow(GetDlgItem(hWnd, IDCANCEL), SW_HIDE);
@@ -540,12 +545,10 @@ public:
                 pBitmapMemory = reinterpret_cast<Gdiplus::Bitmap*>(GetProp(hWnd, _T(PROP_BITMAP_MEMORY)));
                 if (pBitmapMemory != NULL)
                 {
-                    Gdiplus::Graphics graphics(hDC);
                     GetClientRect(hWnd, &rcWindow);
-                    graphics.DrawImage(pBitmapMemory,
+                    Gdiplus::Graphics(hDC).DrawImage(pBitmapMemory,
                         Gdiplus::RectF(0, 0, rcWindow.right - rcWindow.left, rcWindow.bottom - rcWindow.top),
                         0, 0, pBitmapMemory->GetWidth(), pBitmapMemory->GetHeight(), Gdiplus::Unit::UnitPixel);
-                    //DrawPie(&graphics, hWnd);
                 }
             }
 
@@ -559,6 +562,7 @@ public:
             case IDOK:
             {
                 m_AnimationType = (m_AnimationType + 1) % 4;
+                m_ColorBack = RGB(rand() % 0x100, rand() % 0x100, rand() % 0x100);
                 return (INT_PTR)TRUE;
             }
             break;

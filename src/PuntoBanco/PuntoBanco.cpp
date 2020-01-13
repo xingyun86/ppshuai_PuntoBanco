@@ -3,8 +3,8 @@
 
 #include "framework.h"
 #include "PuntoBanco.h"
+#include "EffectsDialogWindow.h"
 #include "RotateDialogWindow.h"
-//#include "EffectsDialogWindow.h"
 //#include "PuntoBancoDialogWindow.h"
 
 
