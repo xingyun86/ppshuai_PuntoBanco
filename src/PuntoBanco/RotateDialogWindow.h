@@ -271,6 +271,80 @@ void DrawPie(Gdiplus::Graphics* pGraphics, HWND hWnd) {
         m_MarginAngle = 0;
     }
 }
+
+/////////////////////////////////////////////////////////////////////////////////
+// 添加圆角矩形
+static void addRoundRect(Gdiplus::GraphicsPath& path, RECT rc, int r1, int r2 = 0, int r3 = 0, int r4 = 0)
+{
+    int x = rc.left;
+    int y = rc.top;
+    int w = rc.right - rc.left;
+    int h = rc.bottom - rc.top;
+    if (r2 == 0) r2 = r1;
+    if (r3 == 0) r3 = r1;
+    if (r4 == 0) r4 = r2;
+    path.AddBezier(x, y + r1, x, y, x + r1, y, x + r1, y);
+    path.AddLine(x + r1, y, (x + w) - r2, y);
+    path.AddBezier((x + w) - r2, y, x + w, y, x + w, y + r2, x + w, y + r2);
+    path.AddLine((x + w), (y + r2), (x + w), (y + h) - r3);
+    path.AddBezier(x + w, (y + h) - r3, x + w, y + h, (x + w) - r3, y + h, (x + w) - r3, y + h);
+    path.AddLine((x + w) - r3, y + h, x + r4, y + h);
+    path.AddBezier(x + r4, y + h, x, y + h, x, (y + h) - r4, x, (y + h) - r4);
+    path.AddLine(x, (y + h) - r4, x, y + r1);
+}
+//绘制艺术字
+void DrawWordArt(Gdiplus::Graphics* pGraphics)
+{
+    Gdiplus::Bitmap bitmap(500, 300, pGraphics);
+    Gdiplus::Graphics graphics(&bitmap);
+    graphics.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+
+    Gdiplus::FontFamily fontFamily(CStringW(_T("Arial Black")));
+    Gdiplus::StringFormat strformat;
+    _TCHAR pszbuf[][MAXCHAR] = {
+        {_T("Hello everyone!")},
+        {_T("中文测试！123")}
+    };
+
+    Gdiplus::GraphicsPath path;
+    path.AddString(CStringW(pszbuf[0]), _tcslen(pszbuf[0]), &fontFamily,
+        Gdiplus::FontStyleRegular, 38, Gdiplus::Point(10, 10), &strformat);
+
+    path.AddString(CStringW(pszbuf[1]), _tcslen(pszbuf[1]), &fontFamily,
+        Gdiplus::FontStyleRegular, 38, Gdiplus::Point(100, 60), &strformat);
+
+    Gdiplus::Pen pen(Gdiplus::Color(200, 215, 0, 0), 3);
+
+    // 绘制文字路径
+    graphics.DrawPath(&pen, &path);
+
+    // 填充背景色
+    Gdiplus::SolidBrush brush(Gdiplus::Color(200, 228, 228, 228));
+    graphics.FillRectangle(&brush, 3, 5, 750, 90);
+
+    // 填充路径颜色，这里是文字的颜色
+    Gdiplus::LinearGradientBrush linGrBrush(
+        Gdiplus::Point(0, 0),
+        Gdiplus::Point(0, 90),
+        Gdiplus::Color(255, 0, 255, 255),
+        Gdiplus::Color(255, 30, 120, 195));
+    graphics.FillPath(&linGrBrush, &path);
+
+    // 绘制圆角矩形
+    Gdiplus::GraphicsPath path2;
+    RECT rt = { 50,120,200,270 };
+    addRoundRect(path2, rt, 40);
+
+    Gdiplus::HatchBrush myHatchBrush(
+        Gdiplus::HatchStyleWave,  // 50多种阴影
+        Gdiplus::Color(200, 0, 0, 255), // 阴影的颜色
+        Gdiplus::Color(200, 0, 255, 0)); // 填充背景色
+    graphics.FillPath(&myHatchBrush, &path2);
+
+    pGraphics->DrawImage(&bitmap,
+        Gdiplus::RectF(0, 200, bitmap.GetWidth(), bitmap.GetHeight()),
+        0, 0, bitmap.GetWidth(), bitmap.GetHeight(), Gdiplus::Unit::UnitPixel);
+}
 /////////////////////////////////////////////////////////////////////////////////
 //
 class CRotateDialogWindow : public CDialogWindow {
@@ -486,7 +560,9 @@ public:
         // 定时器，每次已经产生的烟花进入下一状态
         Gdiplus::Graphics* pGraphicsMemory = NULL;
         pGraphicsMemory = reinterpret_cast<Gdiplus::Graphics*>(GetProp(hWnd, _T(PROP_GRAPHICS_MEMORY)));
+        
         DrawPie(pGraphicsMemory, hWnd);
+        DrawWordArt(pGraphicsMemory);
 
         HWND btnWnd = GetDlgItem(hWnd, IDOK);
         RECT rcBtn = { 0 };
